@@ -1,0 +1,32 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: uav-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: uav_platform
+      MYSQL_USER: uav
+      MYSQL_PASSWORD: uav123
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./docker-data/mysql:/var/lib/mysql
+
+  redis:
+    image: redis:7-alpine
+    container_name: uav-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: uav-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: uav
+      RABBITMQ_DEFAULT_PASS: uav123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
