@@ -1,75 +1,133 @@
 <script setup>
 /**
- * 应用主布局 — 侧边导航栏 + 顶部状态栏 + 内容区
+ * 科技感主布局 — 霓虹侧边栏 + 顶部数据条 + 内容区
+ * 配色：深空蓝 + 霓虹青 + 电光蓝 + 星云紫
  */
-import { ref, computed } from 'vue';                              // Vue 3 API
-import { useRouter, useRoute } from 'vue-router';                 // Vue Router
-import { useWebSocket } from '../composables/useWebSocket';       // WebSocket 连接 Hook
+import { ref, computed, onMounted, onUnmounted } from 'vue';        // Vue 3 API
+import { useRouter, useRoute } from 'vue-router';                    // 路由
+import { useWebSocket } from '../composables/useWebSocket';          // WebSocket 连接
 
-// === 路由 ===
-const router = useRouter();                                       // 路由实例
-const route = useRoute();                                         // 当前路由信息
+const router = useRouter();
+const route = useRoute();
 
-// === WebSocket 连接（全局共享） ===
-const { telemetry, connected } = useWebSocket();                  // 在 AppLayout 层建立连接，所有子页面通过 provide 获取
+// === 全局 WebSocket 连接 ===
+const { telemetry, connected } = useWebSocket();
 
 // === 侧边栏菜单项 ===
 const menuItems = [
-  { path: '/dashboard', title: '驾驶舱', icon: '⌂' },
-  { path: '/charts',    title: '数据图表', icon: '⊡' },
-  { path: '/missions',  title: '任务管理', icon: '≡' },
-  { path: '/logs',      title: '飞行日志', icon: '⏏' }
+  { path: '/dashboard', title: '驾驶舱',    desc: '3D Mission Control',   icon: '◉' },
+  { path: '/charts',    title: '数据图表',   desc: 'Telemetry Analytics',  icon: '⊡' },
+  { path: '/missions',  title: '任务管理',   desc: 'Mission Planner',      icon: '⊞' },
+  { path: '/logs',      title: '飞行日志',   desc: 'Flight Data Recorder', icon: '⊟' }
 ];
 
-// === 当前激活菜单项 ===
-const activeMenu = computed(() => route.path);                    // 根据当前路由高亮对应菜单
+const activeMenu = computed(() => route.path);
+function navigateTo(path) { router.push(path); }
 
-// === 菜单点击：路由跳转 ===
-function navigateTo(path) {
-  router.push(path);
-}
+// === 实时时钟 ===
+const clock = ref('');
+let timer = null;
+onMounted(() => { timer = setInterval(() => {
+  clock.value = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+}, 1000); });
+onUnmounted(() => clearInterval(timer));
 </script>
 
 <template>
   <div class="app-layout">
-    <!-- ===== 左侧导航栏 ===== -->
+    <!-- 背景粒子网格 -->
+    <div class="bg-grid"></div>
+    <div class="bg-scan"></div>
+
+    <!-- ==================== 左侧导航栏 ==================== -->
     <aside class="sidebar">
-      <div class="logo">
-        <span class="logo-icon">🛩</span>
-        <span class="logo-text">UAV 飞控平台</span>
+      <!-- 标志区域 -->
+      <div class="logo-area">
+        <div class="logo-hex">
+          <span class="logo-icon">◆</span>
+        </div>
+        <div class="logo-text">
+          <span class="logo-title">UAV<span style="color:var(--cyan)">.CTRL</span></span>
+          <span class="logo-subtitle">Flight Control System</span>
+        </div>
       </div>
+
+      <!-- 分割线 -->
+      <div class="divider-line"></div>
+
+      <!-- 菜单 -->
       <nav class="nav-menu">
         <div
-          v-for="item in menuItems"
-          :key="item.path"
+          v-for="item in menuItems" :key="item.path"
           class="nav-item"
           :class="{ active: activeMenu === item.path }"
           @click="navigateTo(item.path)"
         >
           <span class="nav-icon">{{ item.icon }}</span>
-          <span class="nav-title">{{ item.title }}</span>
+          <div class="nav-info">
+            <span class="nav-title">{{ item.title }}</span>
+            <span class="nav-desc">{{ item.desc }}</span>
+          </div>
+          <span class="nav-arrow" v-if="activeMenu === item.path">▸</span>
         </div>
       </nav>
+
+      <!-- 底部状态 -->
       <div class="sidebar-footer">
-        <span class="status-dot" :class="{ online: connected }"></span>
-        {{ connected ? '已连接' : '未连接' }}
+        <div class="status-row">
+          <span class="status-dot" :class="{ online: connected }"></span>
+          <span class="status-text">{{ connected ? 'SYS.ONLINE' : 'SYS.OFFLINE' }}</span>
+        </div>
+        <div class="status-row">
+          <span class="status-dot small" style="background:var(--cyan)"></span>
+          <span class="status-text small">{{ clock }}</span>
+        </div>
+        <div class="status-row version">
+          <span>VER 1.0.3-BETA</span>
+        </div>
       </div>
     </aside>
 
-    <!-- ===== 右侧主区域 ===== -->
+    <!-- ==================== 右侧主区域 ==================== -->
     <div class="main-area">
-      <!-- 顶部信息栏 -->
+      <!-- 顶部状态栏 -->
       <header class="top-bar">
-        <div class="top-left">{{ route.meta.title || '' }}</div>
+        <div class="top-left">
+          <span class="route-icon">◈</span>
+          <span class="route-title">{{ route.meta?.title || '' }}</span>
+        </div>
+        <div class="top-center">
+          <div class="data-chip">
+            <span class="chip-label">BATT</span>
+            <span class="chip-value" :class="{ warn: telemetry.battery < 30 }">{{ telemetry.battery ?? '--' }}%</span>
+          </div>
+          <div class="data-chip">
+            <span class="chip-label">ALT</span>
+            <span class="chip-value">{{ telemetry.altitude?.toFixed(1) ?? '--' }}M</span>
+          </div>
+          <div class="data-chip">
+            <span class="chip-label">LAT</span>
+            <span class="chip-value">{{ telemetry.latitude?.toFixed(4) ?? '--' }}</span>
+          </div>
+          <div class="data-chip">
+            <span class="chip-label">LON</span>
+            <span class="chip-value">{{ telemetry.longitude?.toFixed(4) ?? '--' }}</span>
+          </div>
+          <div class="data-chip">
+            <span class="chip-label">STATUS</span>
+            <span class="chip-value" :style="{ color: telemetry.in_air ? 'var(--cyan)' : 'var(--gray)' }">
+              {{ telemetry.in_air ? 'AIRBORNE' : 'GROUND' }}
+            </span>
+          </div>
+        </div>
         <div class="top-right">
-          <span class="telemetry-brief">
-            电量 {{ telemetry.battery ?? '--' }}% &nbsp;|&nbsp;
-            高度 {{ telemetry.altitude?.toFixed(2) ?? '--' }}m &nbsp;|&nbsp;
-            {{ telemetry.in_air ? '🟢 飞行中' : '⚪ 地面' }}
+          <span class="conn-badge" :class="{ active: connected }">
+            {{ connected ? '● LIVE' : '○ IDLE' }}
           </span>
         </div>
       </header>
-      <!-- 页面内容区 -->
+
+      <!-- 页面内容 -->
       <main class="content">
         <router-view :telemetry="telemetry" :connected="connected" />
       </main>
@@ -78,104 +136,202 @@ function navigateTo(path) {
 </template>
 
 <style scoped>
-/* ===== 整体布局 ===== */
 .app-layout {
   display: flex;
   height: 100vh;
-  background: #f0f2f5;
-  color: #333;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-/* ===== 侧边导航栏 ===== */
-.sidebar {
-  width: 220px;
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-  color: #ccc;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-
-.logo {
-  padding: 20px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-.logo-icon { font-size: 24px; }
-.logo-text { font-size: 16px; font-weight: bold; color: #fff; }
-
-.nav-menu { flex: 1; padding: 12px 8px; }
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  margin-bottom: 4px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #999;
-  font-size: 14px;
-}
-.nav-item:hover {
-  background: rgba(255,255,255,0.08);
-  color: #e0e0e0;
-}
-.nav-item.active {
-  background: rgba(64, 158, 255, 0.2);
-  color: #409EFF;
-  font-weight: 600;
-}
-.nav-icon { font-size: 18px; }
-.nav-title { font-size: 14px; }
-
-.sidebar-footer {
-  padding: 16px;
-  font-size: 12px;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #888;
-}
-.status-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: #f44336;
-  display: inline-block;
-}
-.status-dot.online { background: #4caf50; }
-
-/* ===== 顶部状态栏 ===== */
-.main-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  background: var(--bg-deep);
+  position: relative;
   overflow: hidden;
 }
 
-.top-bar {
-  height: 52px;
-  background: #fff;
+/* ===== 背景效果 ===== */
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0,180,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,180,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.bg-scan {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(transparent 0%, rgba(0,200,255,0.015) 50%, transparent 100%);
+  background-size: 100% 200px;
+  animation: scan-line 8s linear infinite;
+}
+
+/* ===== 侧边栏 ===== */
+.sidebar {
+  width: 240px;
+  background: linear-gradient(180deg, rgba(8,16,40,0.98) 0%, rgba(6,12,30,0.98) 100%);
+  border-right: 1px solid rgba(0,180,255,0.12);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  z-index: 10;
+  position: relative;
+}
+.sidebar::after {
+  content: '';
+  position: absolute; right: -1px; top: 60px; bottom: 60px;
+  width: 1px;
+  background: linear-gradient(transparent, var(--cyan), transparent);
+  opacity: 0.3;
+}
+
+/* Logo */
+.logo-area {
+  padding: 22px 20px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-hex {
+  width: 42px; height: 42px;
+  border: 1.5px solid var(--cyan);
+  display: flex; align-items: center; justify-content: center;
+  transform: rotate(45deg);
+  box-shadow: var(--glow-cyan);
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+.logo-icon {
+  transform: rotate(-45deg);
+  font-size: 18px;
+  color: var(--cyan);
+}
+.logo-text { display: flex; flex-direction: column; }
+.logo-title {
+  font-size: 17px; font-weight: 800; letter-spacing: 2px;
+  font-family: var(--font-mono);
+}
+.logo-subtitle {
+  font-size: 9px; color: var(--gray); text-transform: uppercase; letter-spacing: 1.5px;
+  font-family: var(--font-mono);
+}
+
+/* 分割线 */
+.divider-line {
+  height: 1px; margin: 0 20px 8px;
+  background: linear-gradient(90deg, transparent, var(--border-glow), transparent);
+}
+
+/* 菜单项 */
+.nav-menu { flex: 1; padding: 4px 12px; }
+.nav-item {
+  display: flex; align-items: center;
+  padding: 12px 14px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+.nav-item::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(0,180,255,0.06), rgba(168,85,247,0.03));
+  opacity: 0; transition: opacity 0.25s;
+}
+.nav-item:hover::before { opacity: 1; }
+.nav-item:hover { color: var(--white); background: rgba(0,180,255,0.04); }
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(0,180,255,0.12), rgba(168,85,247,0.06));
+  border: 1px solid rgba(0,180,255,0.2);
+  box-shadow: 0 0 16px rgba(0,180,255,0.06);
+}
+.nav-icon {
+  font-size: 18px; width: 28px; text-align: center;
+  color: var(--gray);
+  transition: color 0.25s;
+}
+.nav-item:hover .nav-icon,
+.nav-item.active .nav-icon { color: var(--cyan); }
+.nav-info { flex: 1; display: flex; flex-direction: column; margin-left: 4px; }
+.nav-title { font-size: 13px; font-weight: 600; color: var(--white); }
+.nav-desc { font-size: 9px; color: var(--gray); font-family: var(--font-mono); letter-spacing: 0.5px; }
+.nav-arrow { color: var(--cyan); font-size: 14px; }
+
+/* 底部状态 */
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(0,180,255,0.08);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.status-row { display: flex; align-items: center; gap: 8px; }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--rose);
+  box-shadow: 0 0 6px var(--rose);
+}
+.status-dot.online {
+  background: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald), 0 0 16px rgba(16,185,129,0.3);
+}
+.status-dot.small { width: 5px; height: 5px; }
+.status-text {
+  font-size: 11px; font-family: var(--font-mono); color: var(--gray);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.status-text.small { font-size: 10px; }
+.version { font-size: 9px; color: rgba(100,116,139,0.5); letter-spacing: 2px; margin-top: 4px; }
+
+/* ===== 顶部状态栏 ===== */
+.main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; z-index: 5; }
+.top-bar {
+  height: 56px;
+  background: linear-gradient(180deg, rgba(10,20,50,0.95), rgba(6,12,30,0.85));
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0,180,255,0.1);
+  display: flex;
   align-items: center;
   padding: 0 24px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  gap: 16px;
   flex-shrink: 0;
 }
-.top-left { font-size: 16px; font-weight: 600; color: #333; }
-.top-right { font-size: 13px; color: #666; }
-.telemetry-brief { font-family: 'Menlo', 'Consolas', monospace; }
 
-/* ===== 页面内容 ===== */
+.top-left {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; font-weight: 600; color: var(--white);
+}
+.route-icon { color: var(--cyan); font-size: 18px; }
+
+/* 数据芯片 */
+.top-center {
+  flex: 1;
+  display: flex; align-items: center; gap: 4px;
+  justify-content: center;
+}
+.data-chip {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px;
+  background: rgba(0,180,255,0.04);
+  border: 1px solid rgba(0,180,255,0.1);
+  border-radius: 6px;
+  font-family: var(--font-mono); font-size: 11px;
+}
+.chip-label { color: var(--gray); font-size: 9px; letter-spacing: 1px; }
+.chip-value { color: var(--cyan); font-weight: 700; }
+.chip-value.warn { color: var(--rose); }
+
+.conn-badge {
+  font-family: var(--font-mono); font-size: 11px;
+  padding: 4px 12px;
+  border: 1px solid rgba(244,63,94,0.3);
+  border-radius: 20px;
+  color: var(--rose);
+  letter-spacing: 1px;
+}
+.conn-badge.active {
+  border-color: rgba(16,185,129,0.4);
+  color: var(--emerald);
+  box-shadow: 0 0 10px rgba(16,185,129,0.15);
+}
+
+/* 内容区 */
 .content {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  position: relative;
+  z-index: 1;
 }
 </style>

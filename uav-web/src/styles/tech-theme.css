@@ -1,0 +1,143 @@
+/* ==============================================
+   UAV 飞行控制平台 — 科技感主题系统
+   配色：深空蓝 + 霓虹青 + 电光蓝 + 星云紫
+   ============================================== */
+
+:root {
+  /* 主色调 */
+  --bg-deep:      #060b1a;    /* 深空背景 */
+  --bg-panel:     #0a1030;    /* 面板底色 */
+  --bg-card:      rgba(10, 20, 55, 0.75); /* 毛玻璃卡片 */
+  --border-glow:  rgba(0, 180, 255, 0.2);  /* 发光边框 */
+
+  /* 霓虹色系 */
+  --cyan:         #00d4ff;
+  --blue:         #3b82f6;
+  --purple:       #a855f7;
+  --emerald:      #10b981;
+  --amber:        #f59e0b;
+  --rose:         #f43f5e;
+  --white:        #e2e8f0;
+  --gray:         #64748b;
+
+  /* 渐变 */
+  --gradient-h:   linear-gradient(135deg, var(--cyan) 0%, var(--blue) 100%);
+  --gradient-v:   linear-gradient(180deg, var(--cyan) 0%, var(--purple) 100%);
+  --gradient-card:linear-gradient(135deg, rgba(0,180,255,0.08) 0%, rgba(168,85,247,0.08) 100%);
+
+  /* 阴影 */
+  --glow-cyan:    0 0 12px rgba(0, 212, 255, 0.3), 0 0 40px rgba(0, 212, 255, 0.08);
+  --glow-blue:    0 0 12px rgba(59, 130, 246, 0.3), 0 0 40px rgba(59, 130, 246, 0.08);
+  --glow-purple:  0 0 12px rgba(168, 85, 247, 0.3), 0 0 40px rgba(168, 85, 247, 0.08);
+  --glow-rose:    0 0 12px rgba(244, 63, 94, 0.3), 0 0 40px rgba(244, 63, 94, 0.08);
+
+  /* 字体 */
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  --font-ui:   'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ===== 全局样式 ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg-deep);
+  color: var(--white);
+  font-family: var(--font-ui);
+  overflow: hidden;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 180, 255, 0.2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 180, 255, 0.4); }
+
+/* Element Plus 深色覆盖 */
+.el-card {
+  background: var(--bg-card) !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glow) !important;
+  border-radius: 12px !important;
+  color: var(--white) !important;
+}
+
+.el-button--primary {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%) !important;
+  border: none !important;
+  box-shadow: var(--glow-blue);
+  transition: all 0.3s;
+}
+.el-button--primary:hover {
+  box-shadow: var(--glow-purple);
+  transform: translateY(-1px);
+}
+
+.el-button--success {
+  background: linear-gradient(135deg, #059669 0%, var(--emerald) 100%) !important;
+  border: none !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+.el-button--warning {
+  background: linear-gradient(135deg, #d97706 0%, var(--amber) 100%) !important;
+  border: none !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.el-button--danger {
+  background: linear-gradient(135deg, #e11d48 0%, var(--rose) 100%) !important;
+  border: none !important;
+  box-shadow: var(--glow-rose);
+}
+
+.el-table {
+  --el-table-bg-color: transparent !important;
+  --el-table-tr-bg-color: transparent !important;
+  --el-table-header-bg-color: rgba(0, 180, 255, 0.06) !important;
+  --el-table-border-color: rgba(0, 180, 255, 0.1) !important;
+  --el-table-text-color: var(--white) !important;
+  --el-table-header-text-color: var(--cyan) !important;
+}
+
+.el-input__inner, .el-textarea__inner, .el-select .el-input__inner {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(0, 180, 255, 0.2) !important;
+  color: var(--white) !important;
+}
+
+.el-dialog {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border-glow) !important;
+}
+.el-dialog__title { color: var(--cyan) !important; }
+
+/* 科技感标签 */
+.el-tag--dark {
+  background: transparent !important;
+  border: 1px solid currentColor !important;
+  font-family: var(--font-mono);
+}
+
+/* ===== 动画关键帧 ===== */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: var(--glow-cyan); }
+  50% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5), 0 0 60px rgba(0, 212, 255, 0.12); }
+}
+
+@keyframes scan-line {
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 100vh; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}

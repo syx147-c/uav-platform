@@ -1,89 +1,56 @@
 <script setup>
 /**
- * 任务管理页面 — 飞行任务的 CRUD 表格
+ * 任务管理页面 — 科技风数据表格
  */
-import { ref, onMounted } from 'vue';                         // Vue 3 API
+import { ref, onMounted } from 'vue';
+import { ElMessage } from 'element-plus';
 
-// === 任务列表数据 ===
-const missions = ref([]);                                      // 所有任务记录
-const loading = ref(false);                                    // 表格加载状态
-const dialogVisible = ref(false);                              // 新建/编辑弹窗是否可见
-const isEditing = ref(false);                                  // 当前是否是编辑模式
-
-// === 表单数据 ===
+const missions = ref([]);
+const loading = ref(false);
+const dialogVisible = ref(false);
+const isEditing = ref(false);
 const formData = ref({ title: '', description: '', state: 'CREATED' });
 
-// === 任务状态选项 ===
 const stateOptions = [
-  { label: '已创建',  value: 'CREATED' },
-  { label: '执行中',  value: 'EXECUTING' },
-  { label: '已暂停',  value: 'PAUSED' },
-  { label: '已完成',  value: 'COMPLETED' },
-  { label: '已失败',  value: 'FAILED' }
+  { label: 'CREATED',   value: 'CREATED' },
+  { label: 'EXECUTING', value: 'EXECUTING' },
+  { label: 'PAUSED',    value: 'PAUSED' },
+  { label: 'COMPLETED', value: 'COMPLETED' },
+  { label: 'FAILED',    value: 'FAILED' }
 ];
 
-/**
- * 从后端加载所有任务
- */
+const stateTagType = { CREATED: '', EXECUTING: 'warning', PAUSED: 'info', COMPLETED: 'success', FAILED: 'danger' };
+
 async function loadMissions() {
   loading.value = true;
   try {
     const res = await fetch('/api/drone/missions');
     missions.value = await res.json();
-  } catch (e) {
-    // 后端 API 尚未实现则用模拟数据
+  } catch {
     missions.value = [
-      { id: 1, title: '测试任务1', description: '飞到坐标(30.5, 120.3)', state: 'COMPLETED',
-        createdAt: '2026-05-11 10:00', updatedAt: '2026-05-11 10:05' },
-      { id: 2, title: '悬停测试', description: '起飞后悬停30秒', state: 'CREATED',
-        createdAt: '2026-05-11 12:00', updatedAt: '2026-05-11 12:00' }
+      { id: 1, title: '航点巡逻', description: '飞到坐标(30.5, 120.3)上空50米，悬停30秒后返航', state: 'COMPLETED', createdAt: '2026-05-11 10:00', updatedAt: '2026-05-11 10:05' },
+      { id: 2, title: '悬停耐力测试', description: '起飞到 10m 悬停 60 秒', state: 'EXECUTING', createdAt: '2026-05-11 12:00', updatedAt: '2026-05-11 12:00' },
+      { id: 3, title: '紧急返航演练', description: '模拟低电量触发自动返航', state: 'CREATED', createdAt: '2026-05-11 14:00', updatedAt: '2026-05-11 14:00' }
     ];
-  } finally {
-    loading.value = false;
-  }
+  } finally { loading.value = false; }
 }
 
-/**
- * 打开新建任务弹窗
- */
-function openCreate() {
-  isEditing.value = false;
-  formData.value = { title: '', description: '', state: 'CREATED' };
-  dialogVisible.value = true;
-}
+function openCreate() { isEditing.value = false; formData.value = { title: '', description: '', state: 'CREATED' }; dialogVisible.value = true; }
+function openEdit(row) { isEditing.value = true; formData.value = { ...row }; dialogVisible.value = true; }
 
-/**
- * 打开编辑任务弹窗
- */
-function openEdit(row) {
-  isEditing.value = true;
-  formData.value = { ...row };
-  dialogVisible.value = true;
-}
-
-/**
- * 保存任务（新建或更新）
- */
 async function saveMission() {
   try {
     if (isEditing.value) {
-      await fetch(`/api/drone/missions/${formData.value.id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData.value)
-      });
+      await fetch(`/api/drone/missions/${formData.value.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData.value) });
     } else {
-      await fetch('/api/drone/missions', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData.value)
-      });
+      await fetch('/api/drone/missions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData.value) });
     }
     dialogVisible.value = false;
     loadMissions();
-  } catch (e) {
-    // 后端 API 未实现时，直接更新本地数据
+  } catch {
     if (isEditing.value) {
-      const idx = missions.value.findIndex(m => m.id === formData.value.id);
-      if (idx > -1) missions.value[idx] = { ...formData.value };
+      const i = missions.value.findIndex(m => m.id === formData.value.id);
+      if (i > -1) missions.value[i] = { ...formData.value };
     } else {
       formData.value.id = Date.now();
       missions.value.push({ ...formData.value, createdAt: new Date().toLocaleString(), updatedAt: new Date().toLocaleString() });
@@ -92,83 +59,67 @@ async function saveMission() {
   }
 }
 
-/**
- * 删除任务
- */
 async function deleteMission(row) {
-  try {
-    await fetch(`/api/drone/missions/${row.id}`, { method: 'DELETE' });
-  } catch (e) {}
+  try { await fetch(`/api/drone/missions/${row.id}`, { method: 'DELETE' }); } catch {}
   missions.value = missions.value.filter(m => m.id !== row.id);
+  ElMessage.success('任务已删除');
 }
 
-// === 页面加载时拉取数据 ===
 onMounted(loadMissions);
-
-/**
- * 格式化状态显示
- */
-function stateTagType(state) {
-  const map = { CREATED: 'info', EXECUTING: 'warning', PAUSED: '', COMPLETED: 'success', FAILED: 'danger' };
-  return map[state] || 'info';
-}
-function stateLabel(state) {
-  return stateOptions.find(s => s.value === state)?.label || state;
-}
 </script>
 
 <template>
   <div class="mission-page">
-    <!-- 工具栏 -->
-    <div class="toolbar">
-      <h2>任务管理</h2>
-      <el-button type="primary" @click="openCreate">+ 新建任务</el-button>
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">MISSION PLANNER</h2>
+        <p class="page-sub">飞行任务编排与调度</p>
+      </div>
+      <el-button type="primary" @click="openCreate" size="large">+ NEW MISSION</el-button>
     </div>
 
-    <!-- 任务表格 -->
-    <el-card shadow="hover">
-      <el-table :data="missions" v-loading="loading" stripe border style="width: 100%">
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="title" label="标题" width="180" />
-        <el-table-column prop="description" label="描述" show-overflow-tooltip />
-        <el-table-column prop="state" label="状态" width="100">
+    <div class="table-wrapper">
+      <el-table :data="missions" v-loading="loading" style="width:100%"
+        :header-cell-style="{ fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '1px' }">
+        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="title" label="TITLE" width="180" />
+        <el-table-column prop="description" label="DESCRIPTION" show-overflow-tooltip />
+        <el-table-column prop="state" label="STATE" width="120">
           <template #default="{ row }">
-            <el-tag :type="stateTagType(row.state)" size="small">{{ stateLabel(row.state) }}</el-tag>
+            <el-tag :type="stateTagType[row.state]" effect="dark" size="small" disable-transitions>
+              {{ row.state }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="170" />
-        <el-table-column prop="updatedAt" label="更新时间" width="170" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column prop="createdAt" label="CREATED" width="170" />
+        <el-table-column prop="updatedAt" label="UPDATED" width="170" />
+        <el-table-column label="ACTIONS" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="openEdit(row)">编辑</el-button>
-            <el-popconfirm title="确定删除？" @confirm="deleteMission(row)">
-              <template #reference>
-                <el-button size="small" type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <el-button size="small" @click="openEdit(row)">Edit</el-button>
+            <el-button size="small" type="danger" @click="deleteMission(row)">Delete</el-button>
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </div>
 
-    <!-- 新建/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="isEditing ? '编辑任务' : '新建任务'" width="500px">
-      <el-form :model="formData" label-width="80px">
-        <el-form-item label="标题">
-          <el-input v-model="formData.title" placeholder="输入任务标题" />
+    <!-- 弹窗 -->
+    <el-dialog v-model="dialogVisible" :title="isEditing ? 'EDIT MISSION' : 'NEW MISSION'" width="520px">
+      <el-form :model="formData" label-position="top">
+        <el-form-item label="TITLE">
+          <el-input v-model="formData.title" placeholder="Mission title..." />
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="formData.description" type="textarea" rows="3" placeholder="输入自然语言任务描述" />
+        <el-form-item label="DESCRIPTION">
+          <el-input v-model="formData.description" type="textarea" rows="3" placeholder="Natural language task description..." />
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="formData.state">
+        <el-form-item label="STATE">
+          <el-select v-model="formData.state" style="width:100%">
             <el-option v-for="s in stateOptions" :key="s.value" :label="s.label" :value="s.value" />
           </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="saveMission">保存</el-button>
+        <el-button @click="dialogVisible = false">Cancel</el-button>
+        <el-button type="primary" @click="saveMission">Save</el-button>
       </template>
     </el-dialog>
   </div>
@@ -176,6 +127,15 @@ function stateLabel(state) {
 
 <style scoped>
 .mission-page { display: flex; flex-direction: column; gap: 16px; }
-.toolbar { display: flex; justify-content: space-between; align-items: center; }
-.toolbar h2 { font-size: 18px; color: #333; }
+.page-header { display: flex; justify-content: space-between; align-items: center; }
+.page-title { font-family: var(--font-mono); font-size: 18px; color: var(--white); letter-spacing: 2px; }
+.page-sub { font-size: 12px; color: var(--gray); margin-top: 4px; }
+
+.table-wrapper {
+  background: linear-gradient(135deg, rgba(10,20,50,0.9), rgba(6,12,30,0.8));
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,180,255,0.1);
+  border-radius: 10px;
+  padding: 8px;
+}
 </style>

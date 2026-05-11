@@ -1,8 +1,9 @@
-import { createApp } from 'vue';                  // Vue 3 应用入口
-import App from './App.vue';                       // 根组件
-import router from './router/index.js';            // Vue Router 路由配置
-import ElementPlus from 'element-plus';            // Element Plus UI 组件库
-import 'element-plus/dist/index.css';              // Element Plus 样式
+import { createApp } from 'vue';                     // Vue 3 应用入口
+import App from './App.vue';                          // 根组件
+import router from './router/index.js';               // Vue Router 路由配置
+import ElementPlus from 'element-plus';               // Element Plus UI 组件库
+import 'element-plus/dist/index.css';                 // Element Plus 样式
+import './styles/tech-theme.css';                     // 科技感全局主题样式
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'; // Element Plus 图标集
 
 const app = createApp(App);                        // 创建 Vue 应用实例

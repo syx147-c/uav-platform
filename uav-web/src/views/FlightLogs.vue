@@ -1,113 +1,167 @@
 <script setup>
 /**
- * 飞行日志页面 — 展示每次飞行的关键事件记录
+ * 飞行日志页面 — 终端风格事件记录器
  */
-import { ref, onMounted, computed } from 'vue';            // Vue 3 API
+import { ref, onMounted, computed } from 'vue';
 
-// === 日志列表 ===
-const logs = ref([]);                                    // 日志记录数组
-const loading = ref(false);                              // 表格加载状态
-const filterEvent = ref('');                             // 事件类型筛选
+const logs = ref([]);
+const loading = ref(false);
+const filterEvent = ref('');
 
-// === 事件类型映射 ===
 const eventMap = {
-  ARM:     { label: '解锁',   color: '#909399' },
-  TAKEOFF: { label: '起飞',   color: '#409EFF' },
-  WAYPOINT:{ label: '航点',   color: '#67C23A' },
-  HOVER:   { label: '悬停',   color: '#E6A23C' },
-  RTL:     { label: '返航',   color: '#F56C6C' },
-  LAND:    { label: '降落',   color: '#67C23A' },
-  HOLD:    { label: '急停',   color: '#F56C6C' }
+  ARM:      { label: 'ARM',      color: '#64748b', icon: '⚡' },
+  TAKEOFF:  { label: 'TAKEOFF',  color: '#3b82f6', icon: '▲' },
+  WAYPOINT: { label: 'WAYPOINT', color: '#10b981', icon: '◇' },
+  HOVER:    { label: 'HOVER',    color: '#f59e0b', icon: '◈' },
+  RTL:      { label: 'RTL',      color: '#a855f7', icon: '↺' },
+  LAND:     { label: 'LAND',     color: '#10b981', icon: '▼' },
+  HOLD:     { label: 'HOLD',     color: '#f43f5e', icon: '■' }
 };
 
-/**
- * 从后端加载日志
- */
+const sourceLabel = { AGENT: 'AI', MANUAL: 'MAN', EMERGENCY: 'EMG' };
+const sourceColor = { AGENT: '#3b82f6', MANUAL: '#64748b', EMERGENCY: '#f43f5e' };
+
 async function loadLogs() {
   loading.value = true;
   try {
     const res = await fetch('/api/drone/logs');
     logs.value = await res.json();
-  } catch (e) {
-    // 后端 API 未实现则用模拟数据
+  } catch {
     logs.value = [
       { id: 1, missionId: 1, eventType: 'ARM', source: 'MANUAL',
-        eventData: JSON.stringify({ lat: 47.397, lon: 8.545 }), createdAt: '2026-05-11 14:30:01' },
+        eventData: '{"lat":47.397,"lon":8.545}', createdAt: '2026-05-11 14:30:01' },
       { id: 2, missionId: 1, eventType: 'TAKEOFF', source: 'AGENT',
-        eventData: JSON.stringify({ altitude: 5 }), createdAt: '2026-05-11 14:30:10' },
-      { id: 3, missionId: 1, eventType: 'HOVER', source: 'AGENT',
-        eventData: JSON.stringify({ duration: 30 }), createdAt: '2026-05-11 14:30:45' },
-      { id: 4, missionId: 1, eventType: 'RTL', source: 'AGENT',
-        eventData: JSON.stringify({}), createdAt: '2026-05-11 14:31:15' },
-      { id: 5, missionId: 1, eventType: 'LAND', source: 'AGENT',
-        eventData: JSON.stringify({}), createdAt: '2026-05-11 14:31:30' },
-      { id: 6, missionId: 2, eventType: 'HOLD', source: 'EMERGENCY',
-        eventData: JSON.stringify({ reason: '低电量保护' }), createdAt: '2026-05-11 15:00:00' }
+        eventData: '{"altitude":5}', createdAt: '2026-05-11 14:30:10' },
+      { id: 3, missionId: 1, eventType: 'WAYPOINT', source: 'AGENT',
+        eventData: '{"lat":47.398,"lon":8.546,"alt":10}', createdAt: '2026-05-11 14:30:25' },
+      { id: 4, missionId: 1, eventType: 'HOVER', source: 'AGENT',
+        eventData: '{"duration":30}', createdAt: '2026-05-11 14:30:45' },
+      { id: 5, missionId: 1, eventType: 'RTL', source: 'AGENT',
+        eventData: '{}', createdAt: '2026-05-11 14:31:15' },
+      { id: 6, missionId: 1, eventType: 'LAND', source: 'AGENT',
+        eventData: '{}', createdAt: '2026-05-11 14:31:30' },
+      { id: 7, missionId: 2, eventType: 'HOLD', source: 'EMERGENCY',
+        eventData: '{"reason":"battery<20%"}', createdAt: '2026-05-11 15:00:00' }
     ];
-  } finally {
-    loading.value = false;
-  }
+  } finally { loading.value = false; }
 }
 
-// === 页面初始化 ===
 onMounted(loadLogs);
 
-/**
- * 获取事件标签和颜色
- */
-function eventLabel(type) { return eventMap[type]?.label || type; }
-function eventColor(type) { return eventMap[type]?.color || '#909399'; }
-
-/**
- * 按类型筛选日志
- */
-const filteredLogs = computed(() => {
-  if (!filterEvent.value) return logs.value;
-  return logs.value.filter(l => l.eventType === filterEvent.value);
-});
+const filteredLogs = computed(() =>
+  filterEvent.value ? logs.value.filter(l => l.eventType === filterEvent.value) : logs.value
+);
 </script>
 
 <template>
   <div class="log-page">
-    <!-- 工具栏 -->
-    <div class="toolbar">
-      <h2>飞行日志</h2>
-      <div style="display: flex; gap: 12px;">
-        <el-select v-model="filterEvent" placeholder="筛选事件类型" clearable size="small" style="width: 140px">
-          <el-option v-for="(info, key) in eventMap" :key="key" :label="info.label" :value="key" />
+    <div class="page-header">
+      <div>
+        <h2 class="page-title">FLIGHT DATA RECORDER</h2>
+        <p class="page-sub">飞行事件日志</p>
+      </div>
+      <div class="header-actions">
+        <el-select v-model="filterEvent" placeholder="FILTER EVENT" clearable size="small" style="width:160px">
+          <el-option v-for="(v, k) in eventMap" :key="k" :label="v.label" :value="k" />
         </el-select>
-        <el-button size="small" @click="loadLogs">刷新</el-button>
+        <el-button size="small" @click="loadLogs" :loading="loading">⟳ REFRESH</el-button>
       </div>
     </div>
 
-    <!-- 日志表格 -->
-    <el-card shadow="hover">
-      <el-table :data="filteredLogs" v-loading="loading" stripe border style="width: 100%" max-height="520">
-        <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="missionId" label="任务ID" width="80" />
-        <el-table-column prop="eventType" label="事件类型" width="90">
-          <template #default="{ row }">
-            <el-tag :color="eventColor(row.eventType)" effect="dark" size="small" style="border:none;color:#fff">
-              {{ eventLabel(row.eventType) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="eventData" label="事件详情" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="source" label="来源" width="90">
-          <template #default="{ row }">
-            <el-tag size="small" :type="row.source === 'EMERGENCY' ? 'danger' : row.source === 'MANUAL' ? '' : 'success'">
-              {{ row.source === 'AGENT' ? '智能体' : row.source === 'MANUAL' ? '手动' : '紧急' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="时间" width="170" />
-      </el-table>
-    </el-card>
+    <!-- 日志列表（终端风格） -->
+    <div class="log-terminal">
+      <div class="terminal-header">
+        <span class="term-dot r"></span>
+        <span class="term-dot y"></span>
+        <span class="term-dot g"></span>
+        <span class="term-title">UAV_FLIGHT_LOG — RECORDER v1.0</span>
+      </div>
+      <div class="log-list">
+        <div v-if="filteredLogs.length === 0" class="log-empty">NO DATA</div>
+        <div v-for="log in filteredLogs" :key="log.id" class="log-row">
+          <span class="log-time">{{ log.createdAt }}</span>
+          <span class="log-tag" :style="{ color: eventMap[log.eventType]?.color }">
+            {{ eventMap[log.eventType]?.icon }} {{ eventMap[log.eventType]?.label || log.eventType }}
+          </span>
+          <span class="log-source" :style="{ color: sourceColor[log.source] }">
+            {{ sourceLabel[log.source] || log.source }}
+          </span>
+          <span class="log-data">{{ log.eventData }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .log-page { display: flex; flex-direction: column; gap: 16px; }
-.toolbar { display: flex; justify-content: space-between; align-items: center; }
-.toolbar h2 { font-size: 18px; color: #333; }
+.page-header { display: flex; justify-content: space-between; align-items: center; }
+.page-title { font-family: var(--font-mono); font-size: 18px; color: var(--white); letter-spacing: 2px; }
+.page-sub { font-size: 12px; color: var(--gray); margin-top: 4px; }
+.header-actions { display: flex; gap: 8px; }
+
+/* ===== 终端风格日志面板 ===== */
+.log-terminal {
+  background: rgba(3, 7, 18, 0.95);
+  border: 1px solid rgba(0,180,255,0.12);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.terminal-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.3);
+  border-bottom: 1px solid rgba(0,180,255,0.06);
+}
+.term-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+}
+.term-dot.r { background: #f43f5e; }
+.term-dot.y { background: #f59e0b; }
+.term-dot.g { background: #10b981; }
+.term-title {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--gray); margin-left: 8px; letter-spacing: 1px;
+}
+
+/* 日志列表 */
+.log-list {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 4px 0;
+  font-family: var(--font-mono);
+}
+.log-empty {
+  text-align: center; padding: 40px;
+  color: var(--gray); font-size: 14px; letter-spacing: 2px;
+}
+
+.log-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(0,180,255,0.03);
+  font-size: 11px;
+  transition: background 0.15s;
+}
+.log-row:hover { background: rgba(0,180,255,0.03); }
+
+.log-time { color: var(--gray); min-width: 160px; }
+.log-tag {
+  min-width: 100px; font-weight: 700; letter-spacing: 1px;
+}
+.log-source {
+  min-width: 40px;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 9px;
+  text-align: center;
+  opacity: 0.8;
+}
+.log-data {
+  flex: 1;
+  color: rgba(100,116,139,0.7);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 </style>
