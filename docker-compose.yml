@@ -12,14 +12,47 @@ services:
       - "3307:3306"
     volumes:
       - ./docker-data/mysql:/var/lib/mysql
+      - ./docs/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
 
+  # Redis — JWT 黑名单 + 遥测缓存 + API 频率限制
   redis:
     image: redis:7-alpine
     container_name: uav-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - ./docker-data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
 
+  # MinIO — 对象存储（S3 兼容），存储遥测快照/任务计划/飞行日志
+  minio:
+    image: minio/minio:latest
+    container_name: uav-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web Console (http://localhost:9001)
+    volumes:
+      - ./docker-data/minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      retries: 5
+
+  # RabbitMQ — 消息队列（预留：异步任务分发）
   rabbitmq:
     image: rabbitmq:3.12-management-alpine
     container_name: uav-rabbitmq
@@ -30,3 +63,26 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: uav-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: uav-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./docker/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./docker/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./docker/grafana/dashboards:/etc/grafana/dashboards

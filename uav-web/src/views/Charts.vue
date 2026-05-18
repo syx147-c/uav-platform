@@ -20,11 +20,11 @@ const altHistory  = ref([]);
 const battHistory = ref([]);
 const spdHistory  = ref([]);
 
-// 科技风 ECharts 通用主题
-const darkTheme = {
-  textStyle: { color: '#94a3b8' },
-  title: { textStyle: { color: '#e2e8f0', fontSize: 13, fontWeight: 600 } },
-  tooltip: { backgroundColor: 'rgba(6,12,30,0.95)', borderColor: 'rgba(0,212,255,0.3)', textStyle: { color: '#e2e8f0' } },
+// 浅蓝色 ECharts 通用主题
+const chartTheme = {
+  textStyle: { color: '#64748b' },
+  title: { textStyle: { color: '#1e293b', fontSize: 13, fontWeight: 600 } },
+  tooltip: { backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(59,130,246,0.3)', textStyle: { color: '#1e293b' } },
 };
 
 watch(() => props.telemetry, (d) => {
@@ -39,15 +39,15 @@ watch(() => props.telemetry, (d) => {
 
 function lineOpt(data, title, unit, color) {
   return {
-    ...darkTheme,
-    title: { ...darkTheme.title, text: title },
+    ...chartTheme,
+    title: { ...chartTheme.title, text: title },
     grid: { top: 36, right: 16, bottom: 28, left: 48 },
     xAxis: { type: 'category', data: data.map(d => d.time),
-      axisLine: { lineStyle: { color: 'rgba(0,180,255,0.15)' } },
+      axisLine: { lineStyle: { color: 'rgba(59,130,246,0.15)' } },
       axisLabel: { color: '#64748b', fontSize: 9, rotate: 30 } },
     yAxis: { type: 'value', name: unit,
-      splitLine: { lineStyle: { color: 'rgba(0,180,255,0.06)' } },
-      axisLine: { lineStyle: { color: 'rgba(0,180,255,0.15)' } },
+      splitLine: { lineStyle: { color: 'rgba(59,130,246,0.06)' } },
+      axisLine: { lineStyle: { color: 'rgba(59,130,246,0.15)' } },
       axisLabel: { color: '#64748b', fontSize: 10 } },
     series: [{
       data: data.map(d => d.val), type: 'line', smooth: true, showSymbol: false,
@@ -58,12 +58,12 @@ function lineOpt(data, title, unit, color) {
   };
 }
 
-const altOpt  = computed(() => lineOpt(altHistory.value,  'ALTITUDE / 高度', 'm',   '#00d4ff'));
+const altOpt  = computed(() => lineOpt(altHistory.value,  'ALTITUDE / 高度', 'm',   '#3b82f6'));
 const battOpt = computed(() => lineOpt(battHistory.value, 'BATTERY / 电量',  '%',   '#3b82f6'));
-const spdOpt  = computed(() => lineOpt(spdHistory.value,  'SPEED / 速度',    'm/s', '#a855f7'));
+const spdOpt  = computed(() => lineOpt(spdHistory.value,  'SPEED / 速度',    'm/s', '#6366f1'));
 
 const gaugeOpt = computed(() => ({
-  ...darkTheme,
+  ...chartTheme,
   series: [{
     type: 'gauge', center: ['50%', '55%'], radius: '85%',
     startAngle: 210, endAngle: -30, min: 0, max: 100,
@@ -72,8 +72,8 @@ const gaugeOpt = computed(() => ({
     axisLine: { lineStyle: { width: 16, color: [[0.3, '#10b981'],[0.7, '#f59e0b'],[1, '#f43f5e']] } },
     axisTick: { show: false },
     axisLabel: { color: '#64748b', fontSize: 10 },
-    pointer: { itemStyle: { color: '#00d4ff' } },
-    detail: { formatter: '{value}%', fontSize: 24, color: '#00d4ff', offsetCenter: [0, '75%'],
+    pointer: { itemStyle: { color: '#3b82f6' } },
+    detail: { formatter: '{value}%', fontSize: 24, color: '#3b82f6', offsetCenter: [0, '75%'],
       fontFamily: 'JetBrains Mono, monospace' },
     data: [{ value: props.telemetry?.battery ?? 0, name: 'BATTERY' }]
   }]
@@ -130,9 +130,9 @@ const gaugeOpt = computed(() => ({
 /* ===== KPI 卡片 ===== */
 .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .kpi-card {
-  background: linear-gradient(135deg, rgba(10,20,50,0.9), rgba(6,12,30,0.8));
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,250,252,0.8));
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0,180,255,0.1);
+  border: 1px solid rgba(59,130,246,0.1);
   border-radius: 10px;
   padding: 16px;
   text-align: center;
@@ -141,7 +141,7 @@ const gaugeOpt = computed(() => ({
   transition: all 0.3s;
 }
 .kpi-card:hover {
-  border-color: rgba(0,180,255,0.3);
+  border-color: rgba(59,130,246,0.3);
   box-shadow: var(--glow-cyan);
   transform: translateY(-2px);
 }
@@ -159,15 +159,15 @@ const gaugeOpt = computed(() => ({
 /* ===== 图表网格 ===== */
 .chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .chart-box {
-  background: linear-gradient(135deg, rgba(10,20,50,0.9), rgba(6,12,30,0.8));
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,250,252,0.8));
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0,180,255,0.1);
+  border: 1px solid rgba(59,130,246,0.1);
   border-radius: 10px;
   padding: 12px;
   transition: all 0.3s;
 }
 .chart-box:hover {
-  border-color: rgba(0,180,255,0.2);
-  box-shadow: 0 0 20px rgba(0,180,255,0.06);
+  border-color: rgba(59,130,246,0.2);
+  box-shadow: 0 0 20px rgba(59,130,246,0.06);
 }
 </style>

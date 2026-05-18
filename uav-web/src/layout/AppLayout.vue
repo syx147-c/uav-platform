@@ -6,17 +6,22 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';        // Vue 3 API
 import { useRouter, useRoute } from 'vue-router';                    // 路由
 import { useWebSocket } from '../composables/useWebSocket';          // WebSocket 连接
+import { useAuth } from '../composables/useAuth.js';                 // JWT 认证状态
 
 const router = useRouter();
 const route = useRoute();
 
+// === JWT 认证状态 ===
+const { username, role, logout } = useAuth();
+
 // === 全局 WebSocket 连接 ===
-const { telemetry, connected } = useWebSocket();
+const { telemetry, connected, connect } = useWebSocket();
 
 // === 侧边栏菜单项 ===
 const menuItems = [
   { path: '/dashboard', title: '驾驶舱',    desc: '3D Mission Control',   icon: '◉' },
   { path: '/charts',    title: '数据图表',   desc: 'Telemetry Analytics',  icon: '⊡' },
+  { path: '/chat',      title: 'AI 控制台',  desc: 'Natural Lang CMD',     icon: '▣' },
   { path: '/missions',  title: '任务管理',   desc: 'Mission Planner',      icon: '⊞' },
   { path: '/logs',      title: '飞行日志',   desc: 'Flight Data Recorder', icon: '⊟' }
 ];
@@ -27,10 +32,19 @@ function navigateTo(path) { router.push(path); }
 // === 实时时钟 ===
 const clock = ref('');
 let timer = null;
-onMounted(() => { timer = setInterval(() => {
-  clock.value = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-}, 1000); });
+onMounted(() => {
+  connect();
+  timer = setInterval(() => {
+    clock.value = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+  }, 1000);
+});
 onUnmounted(() => clearInterval(timer));
+
+/** 退出登录 — 清除凭证并跳转到登录页 */
+function handleLogout() {
+  logout();
+  router.push('/login');
+}
 </script>
 
 <template>
@@ -121,9 +135,20 @@ onUnmounted(() => clearInterval(timer));
           </div>
         </div>
         <div class="top-right">
+          <!-- 连接状态 -->
           <span class="conn-badge" :class="{ active: connected }">
             {{ connected ? '● LIVE' : '○ IDLE' }}
           </span>
+          <!-- 用户信息 -->
+          <span class="user-badge">
+            <span class="user-icon">▣</span>
+            {{ username }}
+            <span class="user-role">({{ role }})</span>
+          </span>
+          <!-- 退出按钮 -->
+          <button class="logout-btn" @click="handleLogout" title="退出登录">
+            ⏻
+          </button>
         </div>
       </header>
 
@@ -148,13 +173,13 @@ onUnmounted(() => clearInterval(timer));
 .bg-grid {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background-image:
-    linear-gradient(rgba(0,180,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,180,255,0.03) 1px, transparent 1px);
+    linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 .bg-scan {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background: linear-gradient(transparent 0%, rgba(0,200,255,0.015) 50%, transparent 100%);
+  background: linear-gradient(transparent 0%, rgba(100,160,220,0.015) 50%, transparent 100%);
   background-size: 100% 200px;
   animation: scan-line 8s linear infinite;
 }
@@ -162,8 +187,8 @@ onUnmounted(() => clearInterval(timer));
 /* ===== 侧边栏 ===== */
 .sidebar {
   width: 240px;
-  background: linear-gradient(180deg, rgba(8,16,40,0.98) 0%, rgba(6,12,30,0.98) 100%);
-  border-right: 1px solid rgba(0,180,255,0.12);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%);
+  border-right: 1px solid rgba(59,130,246,0.12);
   display: flex;
   flex-direction: column;
   z-index: 10;
@@ -228,15 +253,15 @@ onUnmounted(() => clearInterval(timer));
 .nav-item::before {
   content: '';
   position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(0,180,255,0.06), rgba(168,85,247,0.03));
+  background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(168,85,247,0.03));
   opacity: 0; transition: opacity 0.25s;
 }
 .nav-item:hover::before { opacity: 1; }
-.nav-item:hover { color: var(--white); background: rgba(0,180,255,0.04); }
+.nav-item:hover { color: var(--white); background: rgba(59,130,246,0.04); }
 .nav-item.active {
-  background: linear-gradient(135deg, rgba(0,180,255,0.12), rgba(168,85,247,0.06));
-  border: 1px solid rgba(0,180,255,0.2);
-  box-shadow: 0 0 16px rgba(0,180,255,0.06);
+  background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(168,85,247,0.06));
+  border: 1px solid rgba(59,130,246,0.2);
+  box-shadow: 0 0 16px rgba(59,130,246,0.06);
 }
 .nav-icon {
   font-size: 18px; width: 28px; text-align: center;
@@ -253,7 +278,7 @@ onUnmounted(() => clearInterval(timer));
 /* 底部状态 */
 .sidebar-footer {
   padding: 16px 20px;
-  border-top: 1px solid rgba(0,180,255,0.08);
+  border-top: 1px solid rgba(59,130,246,0.08);
   display: flex; flex-direction: column; gap: 6px;
 }
 .status-row { display: flex; align-items: center; gap: 8px; }
@@ -278,9 +303,9 @@ onUnmounted(() => clearInterval(timer));
 .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; z-index: 5; }
 .top-bar {
   height: 56px;
-  background: linear-gradient(180deg, rgba(10,20,50,0.95), rgba(6,12,30,0.85));
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,252,0.85));
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0,180,255,0.1);
+  border-bottom: 1px solid rgba(59,130,246,0.1);
   display: flex;
   align-items: center;
   padding: 0 24px;
@@ -303,8 +328,8 @@ onUnmounted(() => clearInterval(timer));
 .data-chip {
   display: flex; align-items: center; gap: 6px;
   padding: 4px 12px;
-  background: rgba(0,180,255,0.04);
-  border: 1px solid rgba(0,180,255,0.1);
+  background: rgba(59,130,246,0.04);
+  border: 1px solid rgba(59,130,246,0.1);
   border-radius: 6px;
   font-family: var(--font-mono); font-size: 11px;
 }
@@ -312,9 +337,12 @@ onUnmounted(() => clearInterval(timer));
 .chip-value { color: var(--cyan); font-weight: 700; }
 .chip-value.warn { color: var(--rose); }
 
+.top-right {
+  display: flex; align-items: center; gap: 10px;
+}
 .conn-badge {
-  font-family: var(--font-mono); font-size: 11px;
-  padding: 4px 12px;
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 3px 10px;
   border: 1px solid rgba(244,63,94,0.3);
   border-radius: 20px;
   color: var(--rose);
@@ -324,6 +352,38 @@ onUnmounted(() => clearInterval(timer));
   border-color: rgba(16,185,129,0.4);
   color: var(--emerald);
   box-shadow: 0 0 10px rgba(16,185,129,0.15);
+}
+
+/* 用户信息标签 */
+.user-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px;
+  background: rgba(59,130,246,0.04);
+  border: 1px solid rgba(59,130,246,0.12);
+  border-radius: 8px;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--white);
+  letter-spacing: 0.5px;
+}
+.user-icon { color: var(--cyan); font-size: 12px; }
+.user-role { font-size: 9px; color: var(--gray); }
+
+/* 退出登录按钮 */
+.logout-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(239,68,68,0.04);
+  border: 1px solid rgba(239,68,68,0.15);
+  border-radius: 8px;
+  color: var(--rose);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.logout-btn:hover {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.35);
+  box-shadow: var(--glow-rose);
 }
 
 /* 内容区 */

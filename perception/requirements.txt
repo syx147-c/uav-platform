@@ -1,0 +1,26 @@
+# UAV Perception Module — Dependency List
+# Install: pip install -r perception/requirements.txt
+
+# Core ML
+torch>=2.4.0
+torchvision>=0.19.0
+ultralytics>=8.3.0            # YOLOv11 object detection
+
+# Depth Estimation (Depth Anything v2 via HuggingFace)
+transformers>=4.46.0
+accelerate>=1.0.0
+huggingface_hub>=0.26.0
+
+# Computer Vision
+opencv-python>=4.10.0
+numpy>=1.26.0
+scipy>=1.14.0                  # Hungarian algorithm for tracking
+Pillow>=10.4.0
+
+# Web server (if running standalone perception_server.py)
+fastapi>=0.115.0
+uvicorn>=0.32.0
+
+# Optional: ROS 2 integration (for PX4 SITL + Gazebo)
+# cv_bridge
+# rclpy

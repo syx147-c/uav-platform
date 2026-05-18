@@ -4,6 +4,7 @@
  */
 import { ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
+import { api } from '../api/http.js';
 
 const missions = ref([]);
 const loading = ref(false);
@@ -24,8 +25,8 @@ const stateTagType = { CREATED: '', EXECUTING: 'warning', PAUSED: 'info', COMPLE
 async function loadMissions() {
   loading.value = true;
   try {
-    const res = await fetch('/api/drone/missions');
-    missions.value = await res.json();
+    const data = await api('/api/missions');
+    missions.value = Array.isArray(data) ? data : (data.data || []);
   } catch {
     missions.value = [
       { id: 1, title: '航点巡逻', description: '飞到坐标(30.5, 120.3)上空50米，悬停30秒后返航', state: 'COMPLETED', createdAt: '2026-05-11 10:00', updatedAt: '2026-05-11 10:05' },
@@ -41,9 +42,9 @@ function openEdit(row) { isEditing.value = true; formData.value = { ...row }; di
 async function saveMission() {
   try {
     if (isEditing.value) {
-      await fetch(`/api/drone/missions/${formData.value.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData.value) });
+      await api(`/api/missions/${formData.value.id}`, { method: 'PUT', body: JSON.stringify(formData.value) });
     } else {
-      await fetch('/api/drone/missions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData.value) });
+      await api('/api/missions', { method: 'POST', body: JSON.stringify(formData.value) });
     }
     dialogVisible.value = false;
     loadMissions();
@@ -60,7 +61,7 @@ async function saveMission() {
 }
 
 async function deleteMission(row) {
-  try { await fetch(`/api/drone/missions/${row.id}`, { method: 'DELETE' }); } catch {}
+  try { await api(`/api/missions/${row.id}`, { method: 'DELETE' }); } catch {}
   missions.value = missions.value.filter(m => m.id !== row.id);
   ElMessage.success('任务已删除');
 }
@@ -134,7 +135,7 @@ onMounted(loadMissions);
 .table-wrapper {
   background: linear-gradient(135deg, rgba(10,20,50,0.9), rgba(6,12,30,0.8));
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0,180,255,0.1);
+  border: 1px solid rgba(59,130,246,0.1);
   border-radius: 10px;
   padding: 8px;
 }

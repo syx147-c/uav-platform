@@ -2,6 +2,20 @@ server:
   port: 8080
 
 spring:
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: uav
+    password: uav123
+    listener:
+      simple:
+        acknowledge-mode: manual         # 手动 ACK，确保消息不丢失
+        retry:
+          enabled: true
+          max-attempts: 3                # 失败重试 3 次
+          initial-interval: 1000ms       # 首次重试间隔
+          multiplier: 2.0                # 指数退避：1s → 2s → 4s
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3307/uav_platform?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
@@ -17,26 +31,59 @@ spring:
       port: 6379
       lettuce:
         pool:
-          max-active: 10
-          max-idle: 5
-          min-idle: 2
-
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: uav
-    password: uav123
-    listener:
-      simple:
-        concurrency: 2
-        max-concurrency: 5
+          max-active: 16
+          max-idle: 8
+          min-idle: 4
 
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 # MAVSDK Bridge (WSL2)
 mavsdk:
   bridge:
     url: http://localhost:8000
+
+# Perception Engine (YOLOv11 + ByteTrack + Depth Anything V2)
+perception:
+  enabled: true
+  device: cpu                        # cpu | cuda | mps
+  detection-model: yolo11n.pt        # YOLOv11 nano (fastest)
+  depth-model: depth-anything/Depth-Anything-V2-Small-hf
+  confidence-threshold: 0.5
+  safe-distance-m: 5.0               # 避障安全距离（米）
+  danger-distance-m: 2.0             # 避障危险距离（米）
+  detection-interval: 2              # 每 N 帧运行一次检测
+  depth-interval: 5                  # 每 N 帧运行一次深度估计
+
+# MinIO 对象存储（S3 兼容）
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+
+# LLM 配置（DeepSeek / OpenAI 兼容）
+llm:
+  provider: deepseek
+  api-key: ${DEEPSEEK_API_KEY:}
+  model: deepseek-chat
+  base-url: https://api.deepseek.com
+
+# JWT 配置
+jwt:
+  secret: ${JWT_SECRET:UAV-Agent-Platform-JWT-Secret-Key-2026-Phase4}
+  expiration-ms: 7200000
+
+# Actuator + Prometheus 监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  health:
+    rabbit:
+      enabled: false
+  metrics:
+    export:
+      prometheus:
+        enabled: true

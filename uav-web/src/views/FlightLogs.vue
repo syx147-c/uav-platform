@@ -3,6 +3,7 @@
  * 飞行日志页面 — 终端风格事件记录器
  */
 import { ref, onMounted, computed } from 'vue';
+import { api } from '../api/http.js';
 
 const logs = ref([]);
 const loading = ref(false);
@@ -13,7 +14,7 @@ const eventMap = {
   TAKEOFF:  { label: 'TAKEOFF',  color: '#3b82f6', icon: '▲' },
   WAYPOINT: { label: 'WAYPOINT', color: '#10b981', icon: '◇' },
   HOVER:    { label: 'HOVER',    color: '#f59e0b', icon: '◈' },
-  RTL:      { label: 'RTL',      color: '#a855f7', icon: '↺' },
+  RTL:      { label: 'RTL',      color: '#6366f1', icon: '↺' },
   LAND:     { label: 'LAND',     color: '#10b981', icon: '▼' },
   HOLD:     { label: 'HOLD',     color: '#f43f5e', icon: '■' }
 };
@@ -24,8 +25,8 @@ const sourceColor = { AGENT: '#3b82f6', MANUAL: '#64748b', EMERGENCY: '#f43f5e' 
 async function loadLogs() {
   loading.value = true;
   try {
-    const res = await fetch('/api/drone/logs');
-    logs.value = await res.json();
+    const data = await api('/api/flight-logs');
+    logs.value = Array.isArray(data) ? data : (data.data || []);
   } catch {
     logs.value = [
       { id: 1, missionId: 1, eventType: 'ARM', source: 'MANUAL',
@@ -102,8 +103,8 @@ const filteredLogs = computed(() =>
 
 /* ===== 终端风格日志面板 ===== */
 .log-terminal {
-  background: rgba(3, 7, 18, 0.95);
-  border: 1px solid rgba(0,180,255,0.12);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(59,130,246,0.12);
   border-radius: 10px;
   overflow: hidden;
 }
@@ -111,8 +112,8 @@ const filteredLogs = computed(() =>
 .terminal-header {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 16px;
-  background: rgba(0,0,0,0.3);
-  border-bottom: 1px solid rgba(0,180,255,0.06);
+  background: rgba(0,0,0,0.05);
+  border-bottom: 1px solid rgba(59,130,246,0.08);
 }
 .term-dot {
   width: 10px; height: 10px; border-radius: 50%;
@@ -140,11 +141,11 @@ const filteredLogs = computed(() =>
 .log-row {
   display: flex; align-items: center; gap: 12px;
   padding: 8px 16px;
-  border-bottom: 1px solid rgba(0,180,255,0.03);
+  border-bottom: 1px solid rgba(59,130,246,0.05);
   font-size: 11px;
   transition: background 0.15s;
 }
-.log-row:hover { background: rgba(0,180,255,0.03); }
+.log-row:hover { background: rgba(59,130,246,0.05); }
 
 .log-time { color: var(--gray); min-width: 160px; }
 .log-tag {
@@ -161,7 +162,7 @@ const filteredLogs = computed(() =>
 }
 .log-data {
   flex: 1;
-  color: rgba(100,116,139,0.7);
+  color: rgba(100,116,139,0.85);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 </style>

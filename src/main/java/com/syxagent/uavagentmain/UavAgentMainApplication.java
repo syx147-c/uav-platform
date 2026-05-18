@@ -1,19 +1,25 @@
 package com.syxagent.uavagentmain;
 
-// MyBatis-Plus 的 Mapper 扫描注解：自动扫描指定包下的所有 Mapper 接口
 import org.mybatis.spring.annotation.MapperScan;
-// Spring Boot 应用启动入口
+import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-// 开启 Spring 定时任务调度（用于定时推送遥测数据）
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * UAV 飞行控制平台 - 主启动类
+ *
+ * 注解说明：
+ * - @EnableScheduling：定时拉取遥测 + 闭环安全监控
+ * - @EnableAsync：模拟地面站异步执行飞控任务
+ * - @EnableRabbit：启用 RabbitMQ 监听器（@RabbitListener 注解生效）
  */
-@SpringBootApplication                                                     // 组合注解：包含 @Configuration、@EnableAutoConfiguration、@ComponentScan
-@MapperScan("com.syxagent.uavagentmain.mapper")                           // 扫描 MyBatis-Plus Mapper 接口所在包
-@EnableScheduling                                                         // 启用定时任务（TelemetryPusher 每 2 秒推送遥测）
+@SpringBootApplication
+@MapperScan("com.syxagent.uavagentmain.mapper")
+@EnableScheduling
+@EnableAsync
+@EnableRabbit
 public class UavAgentMainApplication {
 
     public static void main(String[] args) {

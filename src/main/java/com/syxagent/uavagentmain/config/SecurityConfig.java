@@ -1,37 +1,63 @@
 package com.syxagent.uavagentmain.config;
 
-import org.springframework.context.annotation.Bean;                        // Spring：声明 Bean 的方法
-import org.springframework.context.annotation.Configuration;               // Spring：配置类
-import org.springframework.security.config.annotation.web.builders.HttpSecurity; // Spring Security：HTTP 安全配置构建器
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity; // Spring Security：启用 Web 安全
-import org.springframework.security.config.http.SessionCreationPolicy;     // Spring Security：会话创建策略枚举
-import org.springframework.security.web.SecurityFilterChain;               // Spring Security：安全过滤器链
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Spring Security 安全配置类
- * 当前为开发阶段，放通所有请求，不做认证拦截
- * 后续 Phase 4 接入 JWT 认证时再细化权限控制
+ * Spring Security 配置类 — JWT 认证 + 接口权限控制
+ *
+ * 权限分级：
+ * - /api/auth/**     公开（登录/注册）
+ * - /ws/**            公开（WebSocket 遥测推送，JWT 无法在浏览器 WebSocket 握手时携带标准头）
+ * - /actuator/health  公开（容器健康检查）
+ * - /api/system/**    公开（系统健康检查）
+ * - 其余 /api/**      需要携带有效的 JWT Bearer Token
  */
-@Configuration                                                              // 标记为配置类
-@EnableWebSecurity                                                          // 启用 Spring Security 的 Web 安全功能
+@Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
-    /**
-     * 配置安全过滤器链
-     * @param http Spring Security 提供的 HTTP 安全构建器
-     * @return 安全过滤器链 Bean
-     */
-    @Bean                                                                   // 声明返回值是一个 Spring Bean
+    private final JwtAuthenticationFilter jwtFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
+        this.jwtFilter = jwtFilter;
+    }
+
+    /** 密码编码器 — BCrypt 强度 10 */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())                                   // 关闭 CSRF 保护（WebSocket 连接不需要 CSRF Token）
-            .sessionManagement(sm -> sm.sessionCreationPolicy(
-                    SessionCreationPolicy.STATELESS))                       // 设为无状态模式（不使用 HttpSession，为后续 JWT 做准备）
+            // 前后端分离 REST API，禁用 CSRF
+            .csrf(csrf -> csrf.disable())
+            // 无状态会话 — 每次请求携带 JWT
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/ws/**", "/api/**", "/telemetry")         // WebSocket 端点、REST API 接口
-                    .permitAll()                                            // 放通无需认证
-                .anyRequest().permitAll()                                   // 所有其他请求也放通
-            );
-        return http.build();                                                // 构建并返回安全过滤器链
+                // 认证接口 — 公开访问
+                .requestMatchers("/api/auth/**").permitAll()
+                // WebSocket 遥测推送 — 公开访问（浏览器 WebSocket API 不支持自定义头，JWT 通过 query param 传递）
+                .requestMatchers("/ws/**").permitAll()
+                // 健康检查 + 监控 — 公开给容器编排和 Prometheus 刮取
+                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/api/system/**").permitAll()
+                // 所有业务 API — 需携带有效 JWT
+                .requestMatchers("/api/**").authenticated()
+                // 静态资源放通
+                .anyRequest().permitAll()
+            )
+            // 在 UsernamePasswordAuthenticationFilter 之前插入 JWT 过滤器
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
     }
 }

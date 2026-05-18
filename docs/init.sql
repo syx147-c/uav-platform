@@ -1,6 +1,19 @@
 -- UAV 飞行控制平台 数据库初始化脚本
 -- 使用 Navicat 连接 localhost:3307, 用户 uav, 密码 uav123, 数据库 uav_platform
 
+-- 系统用户表
+CREATE TABLE IF NOT EXISTS sys_user (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(64) NOT NULL UNIQUE,
+    password VARCHAR(256) NOT NULL,
+    role VARCHAR(32) DEFAULT 'USER',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 默认管理员账号 admin / admin123
+INSERT IGNORE INTO sys_user (username, password, role) VALUES
+('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5Eh', 'ADMIN');
+
 -- 飞行任务表
 CREATE TABLE IF NOT EXISTS uav_mission (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,

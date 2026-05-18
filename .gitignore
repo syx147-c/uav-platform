@@ -18,5 +18,16 @@ Thumbs.db
 # Docker
 docker-data/
 
+# Python
+__pycache__/
+*.pyc
+*.pt
+*.pth
+*.onnx
+*.engine
+
 # Logs
 *.log
+
+# Misc
+UavAgentMainApplication

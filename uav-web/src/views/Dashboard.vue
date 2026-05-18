@@ -6,6 +6,7 @@ import { ref, onMounted, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
+import { api } from '../api/http.js';
 
 const props = defineProps({
   telemetry: { type: Object, default: () => ({}) },
@@ -21,7 +22,7 @@ const sending = ref(false);
 async function sendCommand(command) {
   sending.value = true;
   try {
-    await fetch(`/api/drone/${command}`, { method: 'POST' });
+    await api(`/api/drone/${command}`, { method: 'POST' });
     ElMessage({ message: `指令 ${command.toUpperCase()} 已发送`, type: 'success',
       customClass: 'el-message-tech', duration: 1500 });
   } catch (e) {
@@ -153,7 +154,7 @@ watch(() => props.telemetry, (data) => {
 .map-frame {
   flex: 1;
   position: relative;
-  border: 1px solid rgba(0,180,255,0.2);
+  border: 1px solid rgba(59,130,246,0.2);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: var(--glow-cyan);
@@ -182,9 +183,9 @@ watch(() => props.telemetry, (data) => {
   display: flex; flex-direction: column; gap: 12px;
 }
 .panel-section {
-  background: linear-gradient(135deg, rgba(10,20,50,0.9), rgba(6,12,30,0.8));
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,250,252,0.8));
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(0,180,255,0.12);
+  border: 1px solid rgba(59,130,246,0.12);
   border-radius: 10px;
   padding: 16px;
 }
@@ -230,8 +231,8 @@ watch(() => props.telemetry, (data) => {
 }
 .telem-cell {
   padding: 8px 10px;
-  background: rgba(0,180,255,0.03);
-  border: 1px solid rgba(0,180,255,0.06);
+  background: rgba(59,130,246,0.03);
+  border: 1px solid rgba(59,130,246,0.06);
   border-radius: 6px;
 }
 .cell-label {
@@ -292,7 +293,7 @@ watch(() => props.telemetry, (data) => {
 /* 装饰 */
 .decor-line {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0,180,255,0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(59,130,246,0.2), transparent);
 }
 .decor-text {
   font-family: var(--font-mono); font-size: 9px;
